@@ -24,7 +24,7 @@ module.exports = (req, res, next) => {
         const timestamp = new Date().getTime();
 
         const filename = `${
-            originalname.replace(' ', '_').split('.')[0]
+            originalname.replaceAll(' ', '_').split('.')[0]
         }_${timestamp}.webp`;
         const outputPath = path.resolve(__dirname, '..', 'images', filename);
 

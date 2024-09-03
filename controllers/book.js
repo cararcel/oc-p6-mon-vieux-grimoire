@@ -146,3 +146,30 @@ exports.update = async function (req, res) {
         return res.status(400).json({ error });
     }
 };
+
+exports.rate = async function (req, res) {
+    if (req.body.rating > 5 || req.body.rating < 0) {
+        return res.status(400).json({ message: 'Note non valide' });
+    }
+
+    const book = await Book.findOne({ _id: req.params.id });
+
+    if (!book) {
+        return res.status(404).json({ message: 'Livre non trouvé' });
+    }
+
+    if (book.ratings.find((rating) => rating.userId === req.auth.userId)) {
+        return res.status(400).json({ message: 'Déjà noté' });
+    }
+
+    book.ratings.push({ userId: req.auth.userId, grade: req.body.rating });
+    // Math.round to round the rating as the front-end show 4 stars instead of 3.5.
+    book.averageRating = Math.round(
+        book.ratings.reduce((total, rating) => (total += rating.grade), 0) /
+            book.ratings.length
+    );
+
+    await book.save();
+
+    return res.status(201).json({ message: 'Livre noté' });
+};
