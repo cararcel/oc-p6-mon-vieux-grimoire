@@ -63,7 +63,7 @@ exports.delete = async function (req, res) {
     }
 
     if (book.userId !== req.auth.userId) {
-        return res.status(403).json({ message: 'Non authorisé' });
+        return res.status(403).json({ message: 'Non autorisé' });
     }
 
     try {
@@ -81,4 +81,68 @@ exports.delete = async function (req, res) {
     }
 
     return res.status(200).json({ message: 'Livre supprimé' });
+};
+
+exports.update = async function (req, res) {
+    const body = req.file
+        ? {
+              ...JSON.parse(req.body.book),
+              imageUrl: `${req.protocol}://${req.get('host')}/images/${
+                  req.file.filename
+              }`,
+          }
+        : req.body;
+
+    delete body._userId;
+
+    const book = await Book.findOne({ _id: req.params.id });
+
+    if (!book) {
+        return res.status(404).json({ message: 'Livre non trouvé' });
+    }
+
+    if (book.userId !== req.auth.userId) {
+        if (req.file) {
+            // delete image in case of error
+            await fs.rm(
+                path.resolve(__dirname, '..', 'images', req.file.filename)
+            );
+        }
+
+        return res.status(403).json({ message: 'Non autorisé' });
+    }
+
+    if (!Number.isInteger(Number.parseInt(body.year, 10))) {
+        if (req.file) {
+            // delete image in case of error
+            await fs.rm(
+                path.resolve(__dirname, '..', 'images', req.file.filename)
+            );
+        }
+
+        return res.status(400).json({ message: 'Année non valide' });
+    }
+
+    try {
+        await Book.updateOne(
+            { _id: req.params.id },
+            { ...body, _id: req.params.id }
+        );
+
+        // Remove old image if we uploaded a new one.
+        if (req.file) {
+            await fs.rm(
+                path.resolve(
+                    __dirname,
+                    '..',
+                    'images',
+                    book.imageUrl.split('/').pop()
+                )
+            );
+        }
+
+        return res.status(200).json({ message: 'Livre mis à jour' });
+    } catch (error) {
+        return res.status(400).json({ error });
+    }
 };
