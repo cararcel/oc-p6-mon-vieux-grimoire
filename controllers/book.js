@@ -47,3 +47,9 @@ exports.getOne = async function (req, res) {
 
     return res.status(200).json(book);
 };
+
+exports.getBestRated = async function (req, res) {
+    const books = await Book.find().sort({ averageRating: -1 }).limit(3);
+
+    return res.status(200).json(books);
+};
