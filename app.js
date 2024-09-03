@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require('mongoose');
 
 const Book = require('./models/Book');
+const userRoutes = require('./routes/user');
 
 mongoose
     .connect(
@@ -60,5 +61,7 @@ app.get('/api/books', (req, res, next) => {
     ];
     res.status(200).json(books);
 });
+
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
