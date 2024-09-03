@@ -1,5 +1,6 @@
 const Book = require('../models/Book');
 const fs = require('fs/promises');
+const path = require('path');
 
 exports.create = async function (req, res) {
     const body = JSON.parse(req.body.book);
@@ -52,4 +53,32 @@ exports.getBestRated = async function (req, res) {
     const books = await Book.find().sort({ averageRating: -1 }).limit(3);
 
     return res.status(200).json(books);
+};
+
+exports.delete = async function (req, res) {
+    const book = await Book.findOne({ _id: req.params.id });
+
+    if (!book) {
+        return res.status(404).json({ message: 'Livre non existant' });
+    }
+
+    if (book.userId !== req.auth.userId) {
+        return res.status(403).json({ message: 'Non authorisé' });
+    }
+
+    try {
+        await Book.deleteOne({ _id: req.params.id });
+        await fs.rm(
+            path.resolve(
+                __dirname,
+                '..',
+                'images',
+                book.imageUrl.split('/').pop()
+            )
+        );
+    } catch (error) {
+        return res.status(400).json({ error });
+    }
+
+    return res.status(200).json({ message: 'Livre supprimé' });
 };
